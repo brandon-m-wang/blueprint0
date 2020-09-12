@@ -9,6 +9,7 @@ import { getJobs, updateJob } from '@utils/airtable/requests';
 import { Status } from '../StatusScreen/StatusScreen';
 import ContactsModal from '@components/ContactsModal/ContactsModal';
 import { StatusController } from '@screens/StatusScreen/StatusController';
+import { useState } from 'react';
 
 // BWBP
 import { Overlay, CheckBox, Button } from 'react-native-elements';
@@ -22,13 +23,14 @@ interface Availability {
   friday: boolean;
 }
 
-interface JobsScreenState {
+interface JobsScreenState { //interface serves as a template for objects
   title: string;
   jobs: JobRecord[];
   refreshing: boolean;
   staticHeader: boolean;
   status: Status;
   availability: Availability;
+  overlayOpen: boolean; 
 }
 
 interface JobsScreenProps {
@@ -45,6 +47,9 @@ interface JobsScreenProps {
  * - Compontent Library: https://react-native-elements.github.io/react-native-elements/docs/button.html
  *
  */
+
+//const [visible,setVisible] = useState(false);
+
 export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState> {
   static contextType = GlobalContext;
 
@@ -64,6 +69,7 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
         thursday: true,
         friday: false,
       },
+      overlayOpen: false //state object requires definition in the JobScreenState interface; now is a property of the state of JobScreen
     };
   }
 
@@ -104,12 +110,62 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
     // Step 0: Clone the jobs input
     const newJobs: JobRecord[] = cloneDeep(jobs);
     console.log(newJobs, availability);
-
     // Step 1: Remove jobs where the schedule doesn't align with the users' availability.
-
+    //for (const [JobRecord] of Object.entries(jobs)){
+    var i = 0
+    var flag = false
+    for (let job of jobs){
+      //console.log(job.storeName);
+      var flag = false
+      //for (const [schedule, day] of Object.entries(job)){
+      for (let day of job.schedule){
+        if (day == "Monday" && !availability.monday){
+          //console.log("monday");
+          //console.log(day)
+          //console.log(i)
+          //console.log(newJobs[i].storeName);
+          newJobs.splice(i, 1)
+          flag = true
+          //console.log(newJobs[i].storeName);
+          break
+        }
+        if (day == "Tuesday" && !availability.tuesday){
+          newJobs.splice(i, 1)
+          flag = true
+          break
+        }
+        if (day == "Wednesday" && !availability.wednesday){
+          newJobs.splice(i, 1)
+          flag = true
+          break
+        }
+        if (day == "Thursday" && !availability.thursday){
+          newJobs.splice(i, 1)
+          flag = true
+          break
+        }
+        if (day == "Friday" && !availability.friday){
+          newJobs.splice(i, 1)
+          flag = true
+          break
+        } 
+    }
+    if(!flag){i += 1}
+    //console.log(i)
+  }
+//}
+//}
+//}
+    
     // Step 2: Save into state
     this.setState({ jobs: newJobs });
+
   };
+  
+ /* toggleOverlay = () => {
+    this.setState({visible});
+
+  }; */
 
   getStatus = (jobs: JobRecord[]): Status => {
     if (!this.context.user.graduated) {
@@ -128,6 +184,15 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
   renderCards(): React.ReactElement {
     return <>{this.state.jobs.map((record, index) => this.createJobCard(record, index))}</>;
   }
+
+  toggleOverlay = (): void => { //class property -- function type 
+    this.setState((prevState) => { //either accept object or function as parameter; function in this case
+      return {
+        overlayOpen: !prevState.overlayOpen //switch
+      }
+    })
+  }
+//i believe this function does not return a value but rather a setState operation on a function that when passed in will return a partial
 
   render() {
     const { monday, tuesday, wednesday, thursday, friday } = this.state.availability;
@@ -197,12 +262,17 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
             title="Filter Search"
             containerStyle={{ width: '50%' }}
             onPress={(): void => {
-              this.filterJobs(getJobs(), this.state.availability);
+              this.filterJobs(getJobs(), this.state.availability); 
+              //toggleOverlay
+              this.toggleOverlay()
             }}
           />
         </View>
-        <StatusController defaultChild={this.renderCards()} status={this.state.status} />
+        {/*<Overlay isVisible={visible} onBackdropPress={this.setState(toggleOverlay)}>*/}
+        <Overlay isVisible = {this.state.overlayOpen} onBackdropPress={this.toggleOverlay}>
+        <><StatusController defaultChild={this.renderCards()} status={this.state.status}/></>
+        </Overlay>
       </BaseScreen>
     );
-  }
-}
+  };
+};
