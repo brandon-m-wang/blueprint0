@@ -15,6 +15,7 @@ export enum Status {
 
 type StatusScreenProps = {
   name: Status;
+  //toggleOverlay: boolean;
   action?: () => void;
 };
 

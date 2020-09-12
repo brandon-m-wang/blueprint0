@@ -23,13 +23,14 @@ interface Availability {
   friday: boolean;
 }
 
-interface JobsScreenState {
+interface JobsScreenState { //interface serves as a template for objects
   title: string;
   jobs: JobRecord[];
   refreshing: boolean;
   staticHeader: boolean;
   status: Status;
   availability: Availability;
+  overlayOpen: boolean; 
 }
 
 interface JobsScreenProps {
@@ -48,7 +49,6 @@ interface JobsScreenProps {
  */
 
 //const [visible,setVisible] = useState(false);
-
 
 export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState> {
   static contextType = GlobalContext;
@@ -69,6 +69,7 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
         thursday: true,
         friday: false,
       },
+      overlayOpen: false //state object requires definition in the JobScreenState interface; now is a property of the state of JobScreen
     };
   }
 
@@ -184,7 +185,15 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
     return <>{this.state.jobs.map((record, index) => this.createJobCard(record, index))}</>;
   }
 
-  
+  toggleOverlay = (): void => { //class property -- function type 
+    this.setState((prevState) => { //either accept object or function as parameter; function in this case
+      return {
+        overlayOpen: !prevState.overlayOpen //switch
+      }
+    })
+  }
+//i believe this function does not return a value but rather a setState operation on a function that when passed in will return a partial
+
   render() {
     const { monday, tuesday, wednesday, thursday, friday } = this.state.availability;
     return (
@@ -255,12 +264,14 @@ export class JobsScreen extends React.Component<JobsScreenProps, JobsScreenState
             onPress={(): void => {
               this.filterJobs(getJobs(), this.state.availability); 
               //toggleOverlay
+              this.toggleOverlay()
             }}
           />
         </View>
-        {/*<Overlay isVisible={visible} onBackdropPress={toggleOverlay}>*/}
-        <StatusController defaultChild={this.renderCards()} status={this.state.status} />
-        {/*</Overlay>*/}
+        {/*<Overlay isVisible={visible} onBackdropPress={this.setState(toggleOverlay)}>*/}
+        <Overlay isVisible = {this.state.overlayOpen} onBackdropPress={this.toggleOverlay}>
+        <><StatusController defaultChild={this.renderCards()} status={this.state.status}/></>
+        </Overlay>
       </BaseScreen>
     );
   };
